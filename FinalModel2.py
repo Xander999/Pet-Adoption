@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Aug  9 22:06:16 2020
+
+@author: xander999
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+#---- This function tokenizes different spaced 'color_type' in the dataset-- 
+def xx(x):
+    x=x.strip()
+    return x.split(' ')
+
+# =============================================================================
+# Fetching the Trraining Data
+# =============================================================================
+
+dataset=pd.read_csv('Dataset/train.csv')
+
+data=dataset.loc[:,['pet_id','condition','color_type','length(m)',
+                   'height(cm)', 'X1', 'X2', 'breed_category',
+                   'pet_category']]
+data=data.set_index('pet_id')
+
+# =============================================================================
+# #---------Missing Value in Training Data------------
+# =============================================================================
+data=data.fillna(data.mode().iloc[0])
+data['color_type']=data['color_type'].apply(xx)
+X_train1=data.loc[:,['condition','color_type','length(m)',
+                   'height(cm)', 'X1', 'X2']]
+Y_train1=data.loc[:,['breed_category', 'pet_category']]
+# =============================================================================
+# #---------Categorical Values in Train Data---------
+# =============================================================================
+X_train1=pd.get_dummies(X_train1, prefix=['Condition_'], columns=['condition'])
+aa=pd.get_dummies(X_train1['color_type'].apply(pd.Series).stack(), 
+                        columns=['color_type']).sum(level=0)
+
+X_train1=pd.concat([X_train1, aa], axis=1, sort=False)
+X_train1 = X_train1.drop(['color_type'], axis=1)
+# =============================================================================
+# #---------Feature Scaling in Training Data-----------------
+# =============================================================================
+from sklearn.preprocessing import StandardScaler
+sc_X = StandardScaler()
+X_train1 = sc_X.fit_transform(X_train1)
+
+# =============================================================================
+# ---------------Fitting Decision Tree Classification to the Training set-----
+#---------------------------For Breed Classification-------------
+# =============================================================================
+from sklearn.tree import DecisionTreeClassifier
+DTC_cl_breed =  DecisionTreeClassifier(criterion = 'entropy', random_state = 0)
+
+
+#------For X_train11 and Y_train11-------------
+DTC_cl_breed.fit(X_train1, Y_train1['breed_category'])
+# =============================================================================
+# #-------------------Fitting Logistic Regrression to the Training set-----
+#---------------------------For Pet Classification----------------------------- 
+# =============================================================================
+from sklearn.linear_model import LogisticRegression
+logReg_cl_pet = LogisticRegression(random_state=0)
+
+#------For X_train11 and Y_train11-------------
+logReg_cl_pet.fit(X_train1, Y_train1['pet_category'])
+
+# =============================================================================
+# ---------------------Fetching the Testing Data
+# =============================================================================
+
+dataset1=pd.read_csv('Dataset/test.csv')
+
+data1=dataset1.loc[:,['pet_id','condition','color_type','length(m)',
+                   'height(cm)', 'X1', 'X2']]
+
+data1=data1.set_index('pet_id')
+sm=dataset1.loc[:,'pet_id']
+
+sm=pd.DataFrame(sm)
+# =============================================================================
+# #---------Missing Value in Testing Data------------
+# =============================================================================
+data1=data1.fillna(data1.mode().iloc[0])
+data1['color_type']=data1['color_type'].apply(xx)
+X_test1=data1.loc[:,['condition','color_type','length(m)',
+                   'height(cm)', 'X1', 'X2']]
+# =============================================================================
+# #---------Categorical Values in Test Data---------
+# =============================================================================
+X_test1=pd.get_dummies(X_test1, prefix=['Condition_'], columns=['condition'])
+aa=pd.get_dummies(X_test1['color_type'].apply(pd.Series).stack(), 
+                        columns=['color_type']).sum(level=0)
+
+X_test1=pd.concat([X_test1, aa], axis=1, sort=False)
+X_test1 = X_test1.drop(['color_type'], axis=1)
+# =============================================================================
+# #---------Feature Scaling in Testing Data-----------------
+# =============================================================================
+from sklearn.preprocessing import StandardScaler
+sc_X = StandardScaler()
+X_test1 = sc_X.fit_transform(X_test1)
+
+
+# =============================================================================
+# Prediction of breed category and Pet category
+# =============================================================================
+
+Y_pred1_breed_category = DTC_cl_breed.predict(X_test1)
+Y_pred1_pet_category = logReg_cl_pet.predict(X_test1)
+
+Y_pred1_breed_category = Y_pred1_breed_category.astype(np.int64)
+brd=pd.DataFrame(Y_pred1_breed_category)
+
+dff=pd.DataFrame(data={'breed_category':Y_pred1_breed_category, 
+                       'pet_category': Y_pred1_pet_category})
+
+dff= pd.concat([dff, sm], axis=1, sort=False)
+dff=dff.set_index('pet_id')
+dff.to_csv('Result1.csv')
