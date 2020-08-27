@@ -169,15 +169,34 @@ DTC_acc_breed11=accuracy_score(Y_test11['breed_category'], Y_pred11_breed_catego
 
 
 # =============================================================================
+# Here we will be fitting Extreme Boost Algorithm
+# =============================================================================
+import xgboost as xgb
+
+xg_reg = xgb.XGBClassifier(objective ='reg:logistic', colsample_bytree = 0.6,
+                           learning_rate = 0.3, max_depth = 5, alpha = 14, 
+                           n_estimators = 10)
+
+
+# Predicting the Test set results
+xg_reg.fit(X_train11, Y_train11['breed_category'])
+Y_pred11_breed_category = xg_reg.predict(X_test11)
+
+# Making the Confusion Matrix and Accuracy Score
+from sklearn.metrics import confusion_matrix, accuracy_score
+XBOOST_cm_breed11 = confusion_matrix(Y_test11['breed_category'], Y_pred11_breed_category)
+XBOOST_acc_breed11=accuracy_score(Y_test11['breed_category'], Y_pred11_breed_category)
+
+
+
+# =============================================================================
 # After Evaluation of 5 different Models we have accuracy for each models  which 
 # we will make on the DataFrame nameing "Accurracy_model". And then we can display
 # it on the graph.
 # =============================================================================
 
-
-
-breed_acc=[knn_acc_breed11*100, log_acc_breed11*100, SVC_acc_breed11*100, Gaus_acc_breed11*100, DTC_acc_breed11*100]
-rows=['KNN', 'Logistic Regression', 'SVC', 'Naive Bayes', 'DecisonTreeClassification']
+breed_acc=[knn_acc_breed11*100, log_acc_breed11*100, SVC_acc_breed11*100, Gaus_acc_breed11*100, DTC_acc_breed11*100, XBOOST_acc_breed11*100]
+rows=['KNN', 'Logistic Regression', 'SVC', 'Naive Bayes', 'DecisonTreeClassification','XBoost']
 
 Accuracy_model5=pd.DataFrame(data={'Breed':breed_acc}, index=rows)
 

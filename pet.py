@@ -38,7 +38,8 @@ data=data.set_index('pet_id')
 # =============================================================================
 # #---------Missing Value in Training Data------------
 # =============================================================================
-data=data.fillna(data.mean().iloc[0])
+#data=data.fillna(data.mean().iloc[0])
+data=data.fillna(0)
 data['color_type']=data['color_type'].apply(xx)
 X_train1=data.loc[:,['condition','color_type','X1', 'X2', 'dif']]
 Y_train1=data.loc[:,['breed_category', 'pet_category']]
@@ -122,7 +123,7 @@ log_acc_pet11=accuracy_score(Y_test11['pet_category'], Y_pred11_pet_category)
 # #-----------------------Fitting SVM to the Training set---------------------
 # =============================================================================
 from sklearn.svm import SVC
-SVC_cl_pet = SVC(kernel = 'linear', random_state = 0)
+SVC_cl_pet = SVC(kernel = 'rbf', random_state = 0)
 
 
 #------For X_train11 and Y_train11-------------
@@ -187,6 +188,41 @@ DTC_acc_pet11=accuracy_score(Y_test11['pet_category'], Y_pred11_pet_category)
 
 
 # =============================================================================
+# Here we will be fitting Extreme Boost Algorithm
+# =============================================================================
+import xgboost as xgb
+
+xg_reg = xgb.XGBClassifier(objective ='reg:logistic', 
+                           colsample_bytree = 0.3, 
+                           learning_rate = 1.5,
+                           max_depth = 5, 
+                           alpha = 14, 
+                           n_estimators = 10)
+
+# =============================================================================
+# The present combination increases the accuracy of the model by 89.67
+# =============================================================================
+# objective ='reg:logistic', 
+# colsample_bytree = 0.3, 
+# learning_rate = 1.5,
+# max_depth = 5, 
+# alpha = 14, 
+# n_estimators = 10
+# =============================================================================
+# =============================================================================
+# Predicting the Test set results
+xg_reg.fit(X_train11, Y_train11['pet_category'])
+Y_pred11_pet_category = xg_reg.predict(X_test11)
+
+# Making the Confusion Matrix and Accuracy Score
+from sklearn.metrics import confusion_matrix, accuracy_score
+XBOOST_cm_pet11 = confusion_matrix(Y_test11['pet_category'], Y_pred11_pet_category)
+XBOOST_acc_pet11=accuracy_score(Y_test11['pet_category'], Y_pred11_pet_category)
+
+
+
+
+# =============================================================================
 # After Evaluation of 5 different Models we have accuracy for each models  which 
 # we will make on the DataFrame nameing "Accurracy_model". And then we can display
 # it on the graph.
@@ -194,8 +230,8 @@ DTC_acc_pet11=accuracy_score(Y_test11['pet_category'], Y_pred11_pet_category)
 
 
 
-pet_acc= [knn_acc_pet11*100, log_acc_pet11*100, SVC_acc_pet11*100, Gaus_acc_pet11*100, DTC_acc_pet11*100]
-rows=['KNN', 'Logistic Regression', 'SVC', 'Naive Bayes', 'DecisonTreeClassification']
+pet_acc= [knn_acc_pet11*100, log_acc_pet11*100, SVC_acc_pet11*100, Gaus_acc_pet11*100, DTC_acc_pet11*100, XBOOST_acc_pet11*100]
+rows=['KNN', 'Logistic Regression', 'SVC', 'Naive Bayes', 'DecisonTreeClassification','Xgboost']
 
 Accuracy_model3=pd.DataFrame(data={'Pet': pet_acc}, index=rows)
 
